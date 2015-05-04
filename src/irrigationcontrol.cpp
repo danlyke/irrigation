@@ -13,7 +13,7 @@
 #include <time.h>
 #include <netdb.h>
 #include <ctype.h>
-#include "irrigationcontrol.h"
+#include "fbyhttpserver.h"
 
 
 
@@ -131,22 +131,70 @@ StateBase *stateQueue[MAXSTATEQUEUEENTRIES];
 
 
 
-#define NUMFILECONTROLS 16
-
-static struct FileControl 
-{
-	int file;
-	SelectTarget *target;
-} fileControls[NUMFILECONTROLS];
-int numFileControls;
-
-StepperControllerData *stepperdata;
-MouseData *mousedata;
-
 
 int termsig = 0;
 int got_sighup = 0;
-int listensocket;
+
+#include "fby.h"
+
+
+class SelectListen : public ::FbyHelpers::BaseObj
+{
+private:
+    int listensocket;
+public:
+    SelectListen(const char *port);
+};
+
+
+SelectListen::SelectListen(const char *port)
+    : listensocket(-1), BaseObj(BASEBJINIT(SelectListen));
+{
+	int socket_opt;
+	int resultCode;	
+
+    struct addrinfo          ask,*res;
+	memset(&ask, 0, sizeof(ask));
+	ask.ai_flags = AI_PASSIVE;
+	ask.ai_socktype = SOCK_STREAM;
+	ask.ai_family = PF_INET;
+	if (0 != (resultCode = getaddrinfo(NULL, port, &ask, &res))) 
+	{
+		fprintf(stderr,"getaddrinfo (ipv4): %s\n",gai_strerror(resultCode));
+		exit(1);
+	}
+	
+	listensocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	
+	if (-1 == listensocket)
+	{
+		perror("Socket");
+		exit(-1);
+	}
+	
+
+
+	socket_opt = 1;
+	setsockopt(listensocket,SOL_SOCKET,SO_REUSEADDR,&socket_opt,sizeof(socket_opt));
+	fcntl(listensocket,F_SETFL,O_NONBLOCK);
+	struct sockaddr_storage  ss;
+	memcpy(&ss,res->ai_addr,res->ai_addrlen);
+	
+	if (-1 == bind(listensocket, (struct sockaddr*)&ss, res->ai_addrlen)) 
+	{
+		perror("bind");
+		exit(1);
+	}
+	
+	if (-1 == listen(listensocket, 2*MAX_CONNECTIONS)) 
+	{
+		perror("listen");
+		exit(1);
+	}
+}
+
+
+
 
 static void catchsignal(int sig)
 {
@@ -157,6 +205,8 @@ static void catchsignal(int sig)
 }
 
 #define MAX_CONNECTIONS 16
+
+
 
 
 #include "request.h"
@@ -186,15 +236,6 @@ mainloop()
 		}
 
 		int i;
-		for (i = 0; i < NUMFILECONTROLS; i++)
-		{
-			if (fileControls[i].target)
-			{
-				if (fileControls[i].file > max_fd)
-					max_fd = fileControls[i].file;
-				FD_SET(fileControls[i].file, &read_fds);
-			}
-		}
 
 		/* add connection sockets */
 		for (request = connections; request; request = request->nextRequest) 
@@ -249,14 +290,6 @@ mainloop()
 		}
 		
 
-		for (i = 0; i < NUMFILECONTROLS; i++)
-		{
-			if (fileControls[i].target && FD_ISSET(fileControls[i].file, &read_fds))
-			{
-				fileControls[i].target->Read(fileControls[i].file);
-			}
-		}
-
 		/* check active connections */
 		for (request = connections, requestPrev = NULL; request != NULL;) 
 		{
@@ -294,95 +327,16 @@ mainloop()
 }
 
 
-void
-AllocateFileControls()
-{
-//	fileControls[numFileControls].file = open("/dev/psaux", O_RDWR | O_NONBLOCK | O_NDELAY);
-//
-//	if (-1 == fileControls[numFileControls].file)
-//	{
-//		fprintf(stderr,"Unable to open mouse\n");
-//		exit(-1);
-//	}
-	
-//	mousedata = new MouseData(fileControls[numFileControls].file);
-//	fileControls[numFileControls].target = mousedata;
-//
-//	numFileControls++;
-
-
-
-//	fileControls[numFileControls].file = open("/dev/ttyS0", 
-//						  O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
-//	stepperdata = new StepperControllerData(fileControls[numFileControls].file, stepsInCircle);
-//	fileControls[numFileControls].target = stepperdata;
-//
-//	numFileControls++;
-
-
-
-
-
-}
 
 int
 main(int argc, char *argv[])
 {
-	int socket_opt;
-	struct addrinfo          ask,*res;
-	memset(&ask, 0, sizeof(ask));
-	ask.ai_flags = AI_PASSIVE;
-	ask.ai_socktype = SOCK_STREAM;
-	ask.ai_family = PF_INET;
-
-	int resultCode;
 
 
 	ReadIndexerConfig();
 
 	int i;
-	for (i = 0; i < NUMFILECONTROLS; i++)
-	{
-		fileControls[i].file = -1;
-		fileControls[i].target = 0;
-	}
-	numFileControls = 0;
 
-	AllocateFileControls();
-
-	if (0 != (resultCode = getaddrinfo(NULL, "8888", &ask, &res))) 
-	{
-		fprintf(stderr,"getaddrinfo (ipv4): %s\n",gai_strerror(resultCode));
-		exit(1);
-	}
-	
-	listensocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	
-	if (-1 == listensocket)
-	{
-		perror("Socket");
-		exit(-1);
-	}
-	
-
-
-	socket_opt = 1;
-	setsockopt(listensocket,SOL_SOCKET,SO_REUSEADDR,&socket_opt,sizeof(socket_opt));
-	fcntl(listensocket,F_SETFL,O_NONBLOCK);
-	struct sockaddr_storage  ss;
-	memcpy(&ss,res->ai_addr,res->ai_addrlen);
-	
-	if (-1 == bind(listensocket, (struct sockaddr*)&ss, res->ai_addrlen)) 
-	{
-		perror("bind");
-		exit(1);
-	}
-	
-	if (-1 == listen(listensocket, 2*MAX_CONNECTIONS)) 
-	{
-		perror("listen");
-		exit(1);
-	}
 	struct sigaction         signal_action, signal_old;
 	
 	

@@ -1,6 +1,6 @@
 #ifndef REQUEST_H
 #define REQUEST_H
-#include "irrigationcontrol.h"
+#include "fbyhttpserver.h"
 #include "response.h"
 #include <time.h>
 #define MAX_HEADER_LENGTH 16383

@@ -1,5 +1,5 @@
-#ifndef INDEXERCONTROL_H
-#define INDEXERCONTROL_H
+#ifndef FBYHTTPSERVER_H
+#define FBYHTTPSERVER_H
 
 #define KEEPALIVE_TIME 20
 
@@ -55,9 +55,9 @@ extern int stateQueueEntries;
 extern int stateQueueEntry;
 extern StateBase *stateQueue[MAXSTATEQUEUEENTRIES];
 
-class SelectTarget
+class RWTarget
 {
-    UNCOPYABLE(SelectTarget);
+    UNCOPYABLE(RWTarget);
 
 protected:
 	int fd;
@@ -67,8 +67,8 @@ protected:
 	unsigned char *bytes;
 
 public:
-	SelectTarget(size_t maxBytes, int fdin = -1);
-	~SelectTarget();
+	RWTarget(size_t maxBytes, int fdin = -1);
+	~RWTarget();
 	virtual void Execute() = 0;
 	ssize_t Read(int rfd = -1);
 
@@ -79,7 +79,7 @@ public:
 
 
 
-class MouseData : public SelectTarget {
+class MouseData : public RWTarget {
 private:
 	long mousePosition;
 	int positionKnown;
@@ -96,7 +96,7 @@ public:
 
 
 
-class StepperControllerData : public SelectTarget {
+class StepperControllerData : public RWTarget {
 private:
 	int stepsInCircle;
 	int doingCommand;
