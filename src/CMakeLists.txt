@@ -7,6 +7,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ../bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 
+LINK_DIRECTORIES( ${LINK_DIRECTORIES} $ENV{HOME}/lib)
 include_directories($ENV{HOME}/include)
 
 add_executable(example_irrigationcontrol example_irrigationcontrol.cpp irrigation.cpp)
