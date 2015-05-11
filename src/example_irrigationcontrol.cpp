@@ -482,7 +482,7 @@ int main(int argc, char ** argv, char **envp)
         FILE *f = fopen(pidfile, "w");
         if (f == NULL)
         {
-            fprintf(stderr, "Unable to open pidfile %s\n");
+            fprintf(stderr, "Unable to open pidfile %s\n", pidfile);
             exit(-1);
         }
         fprintf(f, "%d\n", pid);
