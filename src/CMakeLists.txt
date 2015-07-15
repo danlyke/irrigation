@@ -10,5 +10,5 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} $ENV{HOME}/lib)
 include_directories($ENV{HOME}/include)
 
-add_executable(example_irrigationcontrol example_irrigationcontrol.cpp irrigation.cpp)
-target_link_libraries (example_irrigationcontrol LINK_PUBLIC fby sqlite3 pq boost_filesystem boost_system gdbm pcre boost_iostreams boost_program_options cgicc ftdi /home/danlyke/lib/libgtest.a /home/danlyke/lib/libgtest_main.a pthread)
+add_executable(irrigationcontrol_daemon irrigationcontrol_daemon.cpp irrigation.cpp)
+target_link_libraries (irrigationcontrol_daemon LINK_PUBLIC fby sqlite3 pq boost_filesystem boost_system gdbm pcre boost_iostreams boost_program_options cgicc ftdi /home/danlyke/lib/libgtest.a /home/danlyke/lib/libgtest_main.a pthread)
