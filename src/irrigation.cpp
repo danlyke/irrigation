@@ -44,13 +44,13 @@ void SetFTDI(int bit)
     unsigned char buf[1] = {0x0};
     if (bit == 0)
     {
-        printf("Turning off relays (%x)\n", buf[0]);
+//        printf("Turning off relays (%x)\n", buf[0]);
     }
     else
     {
         --bit;
         buf[0] ^= (1 << bit);
-        printf("Turning on relay %d (%x)\n", bit, buf[0]);
+//        printf("Turning on relay %d (%x)\n", bit, buf[0]);
     }
 
     if (ftdi)
