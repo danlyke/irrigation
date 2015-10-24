@@ -14,7 +14,7 @@ bool StartFTDI()
     int ret;
     if ((ftdi = ftdi_new()) == 0)
     {
-        // fprintf(stderr, "ftdi_new failed\n");
+        fprintf(stderr, "ftdi_new failed\n");
         return false;
     }
 //    version = ftdi_get_library_version();
@@ -23,8 +23,9 @@ bool StartFTDI()
 //           version.snapshot_str);
     if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x6001)) < 0)
     {
-        // fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
+        fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
         ftdi_free(ftdi);
+        ftdi = NULL;
         return false;
     }
 // Read out FTDIChip-ID of R type chips
@@ -54,7 +55,10 @@ void SetFTDI(int bit)
     }
 
     if (ftdi)
+    {
+//        printf("Writing %x\n", buf[0]);
         ftdi_write_data(ftdi, buf, 1);
+    }
 }
 
 

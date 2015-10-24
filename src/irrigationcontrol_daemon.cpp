@@ -518,9 +518,9 @@ int main(int argc, char ** argv, char **envp)
 
         /* Daemon-specific initialization goes here */
         atexit(cleanup);
-        StartFTDI();
     }
     
+    StartFTDI();
     handle_networking(argc, argv);
     exit(EXIT_SUCCESS);
 }
