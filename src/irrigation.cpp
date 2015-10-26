@@ -103,16 +103,16 @@ Valve::Valve(int valve_num)
     }
 }
 
-void Valve::TurnOff(NetPtr net)
+void Valve::TurnOff(Fby::NetPtr net)
 {
     net->clearInterval(timer);
-    timer = IntervalObjectPtr();
+    timer = Fby::IntervalObjectPtr();
     remaining_run_time = 0;
     SetFTDI(0);
     //cout << "Turning off valve " << valve_num << endl;
 }
 
-void Valve::TurnOn(NetPtr net)
+void Valve::TurnOn(Fby::NetPtr net)
 {
     net->clearInterval(timer);
     remaining_run_time = run_time * 60;
