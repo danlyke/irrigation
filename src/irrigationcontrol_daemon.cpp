@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
+#include <iostream>
 #include <ostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
@@ -17,6 +18,7 @@
 #include "irrigation.h"
 
 using namespace std;
+using namespace Fby;
 
 string configFileName("irrigationcontrol.ini");
 
@@ -228,7 +230,7 @@ void handle_networking(int /* argc */, char ** /* argv */)
 
     for (auto &section :pt)
     {
-        if (startswith(section.first, "Valve"))
+        if (starts_with(section.first, "Valve"))
         {
             string valveStr(section.first);
             int valveNum = valveStr[5] - '0';
@@ -255,7 +257,7 @@ void handle_networking(int /* argc */, char ** /* argv */)
                 }
             }
         }
-        if (startswith(section.first, "Main"))
+        if (starts_with(section.first, "Main"))
         {
             for (auto& key : section.second)
             {
