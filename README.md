@@ -18,3 +18,9 @@ yet dynamic.
 
 This thing depends on my libfby C++ library, and is a stand-alone HTTP
 server.
+
+## Installation
+
+Haven't tested this bit yet, but it should work with paths updated appropriately...
+
+sudo ln -s /home/danlyke/code/irrigation/system/irrigation-controller.service /etc/systemd/system/
