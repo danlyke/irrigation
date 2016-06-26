@@ -6,7 +6,7 @@
 
 
 using namespace std;
-
+using namespace Fby;
 
 struct ftdi_context *ftdi(NULL);
 bool StartFTDI()
