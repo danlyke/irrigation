@@ -34,7 +34,7 @@ const char htmlHeaderStuff[] =
 
 const char htmlTableHeaderStuff[] =
     "<table>\n"
-    "<tr><th rowspan=2 >Zone</th><th rowspan= 2 >Run Time</th>"
+    "<tr><th>&nbsp;</th><th rowspan=2 >Zone</th><th rowspan= 2 >Run Time</th>"
 "<th colspan=2>Mon</th><th colspan=2>Tue</th><th colspan=2>Wed</th><th colspan=2>Thu</th><th colspan=2>Fri</th><th colspan=2>Sat</th><th colspan=2>Sun</th></tr>\n"
 "<tr><th>AM</th><th>PM</th> <th>AM</th><th>PM</th> <th>AM</th><th>PM</th> <th>AM</th><th>PM</th> <th>AM</th><th>PM</th> <th>AM</th><th>PM</th> <th>AM</th><th>PM</th> </tr>\n";
 
@@ -63,7 +63,15 @@ const char *daysOfWeek[] =
 string ValveHTML(ValvePtr valve)
 {
     stringstream ss;
-    ss << "<tr><th>" << (valve->valve_num + 1);
+    ss << "<tr>";
+ 
+    ss << "<td><a href=\"/";
+    ss << (valve->remaining_run_time ? "stop" : "start");
+    ss << "/" << valve->valve_num << "\">";
+    ss << (valve->remaining_run_time ? "stop" : "start");;
+    ss << "</a></td>";
+    ss << "<th>" << (valve->valve_num + 1);
+    
     AddInput(ss, valve->valve_num,
              "name", 16,
              valve->name);
@@ -95,11 +103,6 @@ string ValveHTML(ValvePtr valve)
         }
         ss << "/></td>";
     }
-    ss << "<td><a href=\"/";
-    ss << (valve->remaining_run_time ? "stop" : "start");
-    ss << "/" << valve->valve_num << "\">";
-    ss << (valve->remaining_run_time ? "stop" : "start");;
-    ss << "</a></td>";
     ss << "</tr>\n\n";
     return ss.str();
 }
@@ -370,7 +373,12 @@ void handle_networking(int /* argc */, char ** /* argv */)
                           }
                           else
                           {
-                              response->writeHead(200);
+                              map<string,string> headers;
+                              headers["Cache-control"] = "no-cache, no-store";
+                              headers["Pragma"] = "no-cache";
+                              headers["Expires"] = "0";
+                              
+                              response->writeHead(200, headers);
                               response->write(htmlHeaderStuff,sizeof(htmlHeaderStuff));
                               stringstream ss;
                               ss << "Start time: <input type=\"time\" size=\"8\" name=\"start_time_1\" value=\"";
@@ -445,8 +453,8 @@ const char *pidfile = "../var/run/example_irrigationcontrol.pid";
 
 void cleanup()
 {
-    StopFTDI();
-    unlink(pidfile);
+    SetFTDI(0);
+//    unlink(pidfile);
 }
 
 int main(int argc, char ** argv, char **envp)
@@ -468,7 +476,7 @@ int main(int argc, char ** argv, char **envp)
     
 
         
-    if (!vm.count("debug"))
+    if (0 && !vm.count("debug"))
     {
         /* Our process ID and Session ID */
         pid_t pid, sid;
@@ -522,7 +530,6 @@ int main(int argc, char ** argv, char **envp)
         atexit(cleanup);
     }
     
-    StartFTDI();
     handle_networking(argc, argv);
     exit(EXIT_SUCCESS);
 }

@@ -39,10 +39,26 @@ bool StartFTDI()
     return true;
 }
 
+void StopFTDI()
+{
+    int ret;
+    if (ftdi)
+    {
+        if ((ret = ftdi_usb_close(ftdi)) < 0)
+        {
+            // fprintf(stderr, "unable to close ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
+        }
+        ftdi_free(ftdi);
+        ftdi = NULL;
+    }
+}
+
 
 void SetFTDI(int bit)
 {
     unsigned char buf[1] = {0x0};
+
+    StartFTDI();
     if (bit == 0)
     {
 //        printf("Turning off relays (%x)\n", buf[0]);
@@ -59,23 +75,9 @@ void SetFTDI(int bit)
 //        printf("Writing %x\n", buf[0]);
         ftdi_write_data(ftdi, buf, 1);
     }
+    StopFTDI();
 }
 
-
-void StopFTDI()
-{
-    SetFTDI(0);
-    int ret;
-    if (ftdi)
-    {
-        if ((ret = ftdi_usb_close(ftdi)) < 0)
-        {
-            // fprintf(stderr, "unable to close ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-        }
-        ftdi_free(ftdi);
-        ftdi = NULL;
-    }
-}
 
 
 string startTime1("5:00");
