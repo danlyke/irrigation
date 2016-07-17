@@ -149,18 +149,21 @@ IntervalObjectPtr SetDailyRun(NetPtr net, vector<ValvePtr> &valves, const string
     {
         time_t hours = stol(match.Match(1));
         time_t minutes = stol(match.Match(2));
-
+        time_t seconds_in_a_day = 60*60*24;
         time_t now(time(NULL));
         struct tm local_time;
         localtime_r(&now, &local_time);
         now += local_time.tm_gmtoff;
 
-        now %= (24*60*60);
-
+        now %= seconds_in_a_day;
+        cout << "Setting start time to day offset of " << now << endl;
         time_t start(60 * ((60 * hours) + minutes));
 
     
         time_t firstTime = start - now;
+        if (start < now)
+            firstTime = start + seconds_in_a_day - now;
+           
         cerr << "GMT off " << local_time.tm_gmtoff << " " << hours << ":" << minutes << " " << start << " first time " << firstTime << endl;
 
         return net->setInterval(
@@ -228,8 +231,6 @@ void handle_networking(int /* argc */, char ** /* argv */)
         valves.push_back(valve);
     }
 
-    auto recurringTimer1 = SetDailyRun(net, valves, startTime1, false);
-    auto recurringTimer2 = SetDailyRun(net, valves, startTime2, true);
 
     for (auto &section :pt)
     {
@@ -276,6 +277,8 @@ void handle_networking(int /* argc */, char ** /* argv */)
         }
     }
 
+    auto recurringTimer1 = SetDailyRun(net, valves, startTime1, false);
+    auto recurringTimer2 = SetDailyRun(net, valves, startTime2, true);
 
     net->createServer(
         [net,&recurringTimer1, &recurringTimer2](SocketPtr socket)

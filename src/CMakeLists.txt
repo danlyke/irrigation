@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_INSTALL_PREFIX $ENV{HOME})
 project(FbyNetCPP)
-add_definitions(-std=c++11 -Wall -Wextra -Weffc++)
+add_definitions(-std=c++11 -Wall -Wextra -Weffc++ -g)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ../bin)

@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 //    printf("Initialized libftdi %s (major: %d, minor: %d, micro: %d, snapshot ver: %s)\n",
 //           version.version_str, version.major, version.minor, version.micro,
 //           version.snapshot_str);
-    if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x6001)) < 0)
+    if ((ret = ftdi_usb_open(ftdi, 0x0403, 0x6003)) < 0)
     {
         fprintf(stderr, "unable to open ftdi device: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
         ftdi_free(ftdi);

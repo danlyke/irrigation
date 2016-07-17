@@ -3,8 +3,8 @@ Description=FTTN manager
 After=network-online.service syslog.target
 
 [Service]
-ExecStart=/home/danlyke/code/irrigation/irrigation_control-daemon
-Type=forking
+ExecStart=/home/danlyke/code/irrigation/bin/irrigationcontrol_daemon
+Type=simple
 
 [Install]
 WantedBy=multi-user.target
