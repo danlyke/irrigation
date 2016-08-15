@@ -15,6 +15,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <iostream>
+#include <iomanip>
 
 #include "irrigation.h"
 using namespace std;
@@ -119,6 +120,8 @@ time_t ParseTime(const string &t)
 
 
 
+
+
 void writeFiles(vector<ValvePtr> valves)
 {
     string configFileNameBackup(configFileName + ".bak");
@@ -138,34 +141,72 @@ void writeFiles(vector<ValvePtr> valves)
     }
 }
 
+time_t seconds_in_a_day = 60*60*24;
+time_t SecondsFromMidnight()
+{
+    time_t now(time(NULL));
+    struct tm local_time;
+    localtime_r(&now, &local_time);
+    now += local_time.tm_gmtoff;
 
+    now %= seconds_in_a_day;
+    return now;
+}
 
-IntervalObjectPtr SetDailyRun(NetPtr net, vector<ValvePtr> &valves, const string &startTime, bool is_pm)
+time_t CalculateSecondsUntilFirstTime(time_t hours, time_t minutes)
+{
+    time_t now =  SecondsFromMidnight();
+    cout << "Setting start time to day offset of " << now << endl;
+    time_t start(60 * ((60 * hours) + minutes));
+
+    time_t firstTime = start - now;
+    if (start < now)
+        firstTime = start + seconds_in_a_day - now;
+    return firstTime;
+}
+
+string FormatSecondsToTime(time_t seconds)
+{
+    stringstream ss;
+    int hours = seconds / (60*60);
+    int minutes = (seconds / 60) % 60;
+    
+    ss << hours << ":" << setw(2) << setfill('0') << minutes << ":" << setw(2) << setfill('0') << (seconds % 60);
+    return ss.str();
+
+}
+
+time_t SecondsFromString(const string &startTime)
 {
     Regex regexTime(R"((\d+)\:(\d+))");
     RegexMatch match;
+    time_t startTimeInSeconds = 0;
 
     if (regexTime.Match(startTime, match))
     {
         time_t hours = stol(match.Match(1));
         time_t minutes = stol(match.Match(2));
-        time_t seconds_in_a_day = 60*60*24;
-        time_t now(time(NULL));
-        struct tm local_time;
-        localtime_r(&now, &local_time);
-        now += local_time.tm_gmtoff;
+        startTimeInSeconds = (hours * 60 + minutes) * 60;
+    }
+    return startTimeInSeconds;
+}
 
-        now %= seconds_in_a_day;
-        cout << "Setting start time to day offset of " << now << endl;
-        time_t start(60 * ((60 * hours) + minutes));
+time_t SecondsFromStartTime(const string &startTime)
+{
+    time_t startTimeInSeconds = SecondsFromString(startTime);
+    time_t secondsFromMidnight = SecondsFromMidnight();
+    if (startTimeInSeconds < secondsFromMidnight)
+        startTimeInSeconds += seconds_in_a_day;
+    startTimeInSeconds -= SecondsFromMidnight();
+    return startTimeInSeconds;
+}
 
-    
-        time_t firstTime = start - now;
-        if (start < now)
-            firstTime = start + seconds_in_a_day - now;
-           
-        cerr << "GMT off " << local_time.tm_gmtoff << " " << hours << ":" << minutes << " " << start << " first time " << firstTime << endl;
+IntervalObjectPtr SetDailyRun(NetPtr net, vector<ValvePtr> &valves, const string &startTime, bool is_pm)
+{
 
+    time_t firstTime = SecondsFromStartTime(startTime);
+    if (firstTime)
+    {
         return net->setInterval(
             [net, valves, is_pm, firstTime]()
             {
@@ -192,7 +233,7 @@ IntervalObjectPtr SetDailyRun(NetPtr net, vector<ValvePtr> &valves, const string
                             },
                             offset);
                     }
-                    offset += valve->run_time * 1000;
+                    offset += valve->run_time * 60 * 1000;
                     offset += 1000;
                 }
             },
@@ -280,7 +321,7 @@ void handle_networking(int /* argc */, char ** /* argv */)
     auto recurringTimer1 = SetDailyRun(net, valves, startTime1, false);
     auto recurringTimer2 = SetDailyRun(net, valves, startTime2, true);
 
-    net->createServer(
+    ServerPtr server = net->createServer(
         [net,&recurringTimer1, &recurringTimer2](SocketPtr socket)
         {
             HTTPRequestBuilderPtr requestBuilder
@@ -389,7 +430,13 @@ void handle_networking(int /* argc */, char ** /* argv */)
                               ss << "\" />\n";
                               ss << "Start time: <input type=\"time\" size=\"8\" name=\"start_time_2\" value=\"";
                               ss << startTime2;
-                              ss<< "\" />\n";
+                              ss << "\" />\n";
+                              ss << " Now: " << FormatSecondsToTime(SecondsFromMidnight())
+                                 << " timer will trigger in " << FormatSecondsToTime(SecondsFromStartTime(startTime1))
+                                 << " (" << FormatSecondsToTime(SecondsFromString(startTime1)) << ")"
+                                 << " & " << FormatSecondsToTime(SecondsFromStartTime(startTime2))
+                                 << "(" << FormatSecondsToTime(SecondsFromString(startTime2)) << ")"
+                                 << "\n";
                               response->write(ss.str());
                               
                               response->write(htmlTableHeaderStuff, sizeof(htmlTableHeaderStuff));
