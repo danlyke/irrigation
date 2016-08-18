@@ -61,6 +61,46 @@ const char *daysOfWeek[] =
     "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
 };
 
+
+time_t seconds_in_a_day = 60*60*24;
+time_t SecondsFromMidnight()
+{
+    time_t now(time(NULL));
+    struct tm local_time;
+    localtime_r(&now, &local_time);
+    now += local_time.tm_gmtoff;
+
+    now %= seconds_in_a_day;
+    return now;
+}
+
+time_t CalculateSecondsUntilFirstTime(time_t hours, time_t minutes)
+{
+    time_t now =  SecondsFromMidnight();
+    cout << "Setting start time to day offset of " << now << endl;
+    time_t start(60 * ((60 * hours) + minutes));
+
+    time_t firstTime = start - now;
+    if (start < now)
+        firstTime = start + seconds_in_a_day - now;
+    return firstTime;
+}
+
+string FormatSecondsToTime(time_t seconds)
+{
+    stringstream ss;
+    int hours = seconds / (60*60);
+    int minutes = (seconds / 60) % 60;
+
+    if (hours)
+        ss << hours << ":" << setw(2);
+    ss << setfill('0') << minutes << ":" << setw(2) << setfill('0') << (seconds % 60);
+    return ss.str();
+
+}
+
+
+
 string ValveHTML(ValvePtr valve)
 {
     stringstream ss;
@@ -81,11 +121,7 @@ string ValveHTML(ValvePtr valve)
              "time", 4,
              to_string(valve->run_time));
     
-    int min = valve->remaining_run_time / 60;
-    int secs = valve->remaining_run_time % 60;
-    char achTime[16];
-    snprintf(achTime,sizeof(achTime), "%d:%2.2d", min, secs);
-    ss << " " << achTime;
+    ss << " " << FormatSecondsToTime(valve->remaining_run_time);
     ss << "</td>";
     for (int i = 0; i < 7; ++i)
     {
@@ -141,40 +177,6 @@ void writeFiles(vector<ValvePtr> valves)
     }
 }
 
-time_t seconds_in_a_day = 60*60*24;
-time_t SecondsFromMidnight()
-{
-    time_t now(time(NULL));
-    struct tm local_time;
-    localtime_r(&now, &local_time);
-    now += local_time.tm_gmtoff;
-
-    now %= seconds_in_a_day;
-    return now;
-}
-
-time_t CalculateSecondsUntilFirstTime(time_t hours, time_t minutes)
-{
-    time_t now =  SecondsFromMidnight();
-    cout << "Setting start time to day offset of " << now << endl;
-    time_t start(60 * ((60 * hours) + minutes));
-
-    time_t firstTime = start - now;
-    if (start < now)
-        firstTime = start + seconds_in_a_day - now;
-    return firstTime;
-}
-
-string FormatSecondsToTime(time_t seconds)
-{
-    stringstream ss;
-    int hours = seconds / (60*60);
-    int minutes = (seconds / 60) % 60;
-    
-    ss << hours << ":" << setw(2) << setfill('0') << minutes << ":" << setw(2) << setfill('0') << (seconds % 60);
-    return ss.str();
-
-}
 
 time_t SecondsFromString(const string &startTime)
 {
@@ -210,10 +212,7 @@ IntervalObjectPtr SetDailyRun(NetPtr net, vector<ValvePtr> &valves, const string
         return net->setInterval(
             [net, valves, is_pm, firstTime]()
             {
-                int offset( firstTime );
-                while (offset < 0) offset += 60 * 60 * 24;
-                offset *= 1000; // seconds to ms
-                
+                int offset( 1000 ); // Start in one second
                 time_t now(time(NULL));
                 struct tm local_time;
                 localtime_r(&now, &local_time);
@@ -232,9 +231,9 @@ IntervalObjectPtr SetDailyRun(NetPtr net, vector<ValvePtr> &valves, const string
                                 valve->TurnOn(net);
                             },
                             offset);
+                        offset += valve->run_time * 60 * 1000;
+                        offset += 1000;
                     }
-                    offset += valve->run_time * 60 * 1000;
-                    offset += 1000;
                 }
             },
             firstTime * 1000,
